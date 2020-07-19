@@ -2,7 +2,7 @@ server:
   port: 8092
 
 auth:
-  realm: x-realm
+  realm: master
   issuer-uri: "http://localhost:8080/auth/realms/${auth.realm}"
   user-name-attribute: preferred_username
 

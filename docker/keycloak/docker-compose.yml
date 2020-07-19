@@ -1,0 +1,36 @@
+version: '2.4'
+
+services:
+  keycloak_db:
+    image: postgres:11.2-alpine
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=pa55w0rd
+      - POSTGRES_ROOT_PASSWORD=pa55w0rdRoot
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  keycloak:
+    image: nevzatcirak/custom-keycloak-server:10.0.2
+    hostname: keycloak
+    environment:
+      - DB_VENDOR=POSTGRES
+      - DB_ADDR=keycloak_db
+      - DB_DATABASE=keycloak
+      - DB_PORT=5432
+      - DB_USER=keycloak
+      - DB_SCHEMA=public
+      - DB_PASSWORD=pa55w0rd
+      - PROXY_ADDRESS_FORWARDING=true
+      - KEYCLOAK_LOGLEVEL=INFO
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=pa55w0rd
+    command: ["-b", "0.0.0.0", "-Dkeycloak.profile.feature.docker=enabled"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - keycloak_db
+
+volumes:
+  pg-data:

@@ -1,0 +1,19 @@
+server:
+  port: 8092
+
+auth:
+  realm: x-realm
+  issuer-uri: "http://localhost:8080/auth/realms/${auth.realm}"
+  user-name-attribute: preferred_username
+
+opa:
+  url: "http://localhost:8181/v1/data/http/authz/allow"
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        id: keycloak
+        jwt:
+          issuer-uri: ${auth.issuer-uri}
+          jwk-set-uri: "${auth.issuer-uri}/protocol/openid-connect/certs"

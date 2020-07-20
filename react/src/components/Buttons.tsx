@@ -4,6 +4,8 @@ interface IButtonsProps {
   login: () => void;
   getUser: () => void;
   callApi: () => void;
+  callApi2: () => void;
+  callApi3: () => void;
   renewToken: () => void;
   logout: () => void;
 }
@@ -20,6 +22,12 @@ const Buttons: React.SFC<IButtonsProps> = props => {
         </button>
         <button className="btn btn-warning btn-getapi" style={{ margin: '10px' }} onClick={props.callApi}>
           Call API
+        </button>
+        <button className="btn btn-warning btn-getapi" style={{ margin: '10px' }} onClick={props.callApi3}>
+          Call API of Another Server
+        </button>
+        <button className="btn btn-warning btn-getapi" style={{ margin: '10px' }} onClick={props.callApi2}>
+          Call API of Forbidden
         </button>
         <button className="btn btn-success btn-renewtoken" style={{ margin: '10px' }} onClick={props.renewToken}>
           Renew Token

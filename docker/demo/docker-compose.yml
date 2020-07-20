@@ -1,0 +1,17 @@
+version: '2.4'
+
+services:
+  oauth2-resource-and-opa:
+    image: nevzatcirak/spring-security-oauth2-and-opa-demo:latest
+    ports:
+      - 8092:8092
+
+  oauth2-resource-server:
+    image: nevzatcirak/spring-security-oauth2-resource-server-demo:latest
+    ports:
+      - 8089:8089
+
+  react-demo:
+    image: nevzatcirak/oauth2-react-demo:latest
+    ports:
+      - 80:80

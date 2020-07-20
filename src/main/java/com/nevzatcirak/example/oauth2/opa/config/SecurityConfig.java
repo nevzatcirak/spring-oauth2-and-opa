@@ -30,8 +30,10 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Nevzat ÇIRAK,
@@ -53,6 +55,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Value("${opa.url}")
     private String opaUrl;
+
+    @PostConstruct
+    private void init(){
+        String url = System.getenv("OPA_URL");
+        if(!Objects.isNull(url))
+            opaUrl = url;
+    }
 
     @Bean
     RestTemplate rest() {

@@ -2,6 +2,7 @@ version: '2.4'
 
 services:
   keycloak_db:
+    container_name: keycloak_db
     image: postgres:11.2-alpine
     environment:
       - POSTGRES_DB=keycloak
@@ -10,8 +11,13 @@ services:
       - POSTGRES_ROOT_PASSWORD=pa55w0rdRoot
     volumes:
       - pg-data:/var/lib/postgresql/data
+    networks:
+      demo-net:
+        aliases:
+          - keycloak_db
 
   keycloak:
+    container_name: keycloak
     image: nevzatcirak/custom-keycloak-server:10.0.2
     hostname: keycloak
     environment:
@@ -31,6 +37,17 @@ services:
       - "8080:8080"
     depends_on:
       - keycloak_db
+    networks:
+      demo-net:
+        aliases:
+          - keycloak
 
 volumes:
   pg-data:
+
+networks:
+  demo-net:
+    name: demo-net
+#    ipam:
+#      config:
+#        - subnet: 172.19.0.0/22

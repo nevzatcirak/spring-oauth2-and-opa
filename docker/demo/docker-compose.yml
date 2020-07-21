@@ -2,16 +2,42 @@ version: '2.4'
 
 services:
   oauth2-resource-and-opa:
+    container_name: oauth2-resource-and-opa
     image: nevzatcirak/spring-security-oauth2-and-opa-demo:latest
+    environment:
+      - AUTH_HOSTNAME=keycloak
+      - OPA_HOSTNAME=opa
+      - API_HOSTNAME=oauth2-resource-server
     ports:
       - 8092:8092
+    networks:
+      demo-net:
+        aliases:
+          - oauth2-resource-and-opa
 
   oauth2-resource-server:
+    container_name: oauth2-resource-server
     image: nevzatcirak/spring-security-oauth2-resource-server-demo:latest
     ports:
       - 8089:8089
+    environment:
+      - AUTH_HOSTNAME=keycloak
+      - OPA_HOSTNAME=opa
+    networks:
+      demo-net:
+        aliases:
+          - oauth2-resource-server
 
-  react-demo:
-    image: nevzatcirak/oauth2-react-demo:latest
-    ports:
-      - 80:80
+#  react-demo:
+#    container_name: react-demo
+#    image: nevzatcirak/oauth2-react-demo:latest
+#    ports:
+#      - 80:80
+#    networks:
+#      demo-net:
+#        aliases:
+#          - react-demo
+
+networks:
+  demo-net:
+    external: true

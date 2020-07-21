@@ -2,6 +2,7 @@ version: '2.4'
 
 services:
   opa:
+    container_name: opa
     image: openpolicyagent/opa:0.22.0
     ports:
       - 8181:8181
@@ -19,3 +20,11 @@ services:
 #      - ./policy/api_authz.rego:/api_authz.rego
 #      - ./policy/allow_all.rego:/allow_all.rego
       - ./policy/api_test.rego:/api_test.rego
+    networks:
+      demo-net:
+        aliases:
+          - opa
+
+networks:
+  demo-net:
+    external: true

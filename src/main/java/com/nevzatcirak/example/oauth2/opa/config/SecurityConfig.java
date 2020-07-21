@@ -1,9 +1,7 @@
 package com.nevzatcirak.example.oauth2.opa.config;
 
-import com.nevzatcirak.example.oauth2.opa.voter.OPAVoter;
-import com.nevzatcirak.example.oauth2.opa.security.CustomUserDetailsService;
 import com.nevzatcirak.example.oauth2.opa.security.GrantedAuthoritiesInjector;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.nevzatcirak.example.oauth2.opa.voter.OPAVoter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +13,6 @@ import org.springframework.security.access.vote.UnanimousBased;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.BeanIds;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -23,14 +20,13 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -49,18 +45,26 @@ import java.util.Objects;
 )
 @PropertySource("classpath:application.yml")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
-
-    @Value("${opa.url}")
     private String opaUrl;
+    private String issuerUri;
+    private String jwkSetUri;
 
-    @PostConstruct
-    private void init(){
-        String url = System.getenv("OPA_URL");
-        if(!Objects.isNull(url))
-            opaUrl = url;
+    public SecurityConfig(@Value("${opa.url}") String opaUrl, @Value("${auth.issuer-uri}") String issuerUri,
+                          @Value("${auth.jwk-set-uri}") String jwkSetUri, @Value("${auth.host}") String hostname) {
+        String authHostname = System.getenv("AUTH_HOSTNAME");
+        String opaHostname = System.getenv("OPA_HOSTNAME");
+        if (!Objects.isNull(authHostname)) {
+            this.jwkSetUri = jwkSetUri.replaceAll(hostname, authHostname);
+            this.issuerUri = issuerUri.replaceAll(hostname, authHostname);
+        } else {
+            this.jwkSetUri = jwkSetUri;
+            this.issuerUri = issuerUri;
+        }
+        if (!Objects.isNull(opaHostname)) {
+            this.opaUrl = opaUrl.replaceAll(hostname, opaHostname);
+        } else {
+            this.opaUrl = opaUrl;
+        }
     }
 
     @Bean
@@ -83,19 +87,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return rest;
     }
 
-    @Override
-    public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder
-                .userDetailsService(customUserDetailsService)
-                .passwordEncoder(passwordEncoder());
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-
     @Bean(BeanIds.AUTHENTICATION_MANAGER)
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
@@ -103,6 +94,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     /************************Resource Server Configurations*********************************/
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return JwtDecoders.fromIssuerLocation(issuerUri);
+    }
 
     @Bean
     Converter<Jwt, AbstractAuthenticationToken> grantedAuthoritiesInjectorConverter() {
@@ -125,6 +121,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .asList(new OPAVoter(opaUrl));
         return new UnanimousBased(decisionVoters);
     }
+
     /***************************************************************************************/
 
     @Override
@@ -152,8 +149,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .oauth2ResourceServer(oauth2ResourceServer ->
                         oauth2ResourceServer
-                                .jwt()
-                                .jwtAuthenticationConverter(grantedAuthoritiesInjectorConverter())
+                                .jwt(jwt -> jwt
+                                        .decoder(jwtDecoder())
+                                        .jwkSetUri(jwkSetUri)
+                                        .jwtAuthenticationConverter(grantedAuthoritiesInjectorConverter())
+                                )
+
                 );
     }
 }

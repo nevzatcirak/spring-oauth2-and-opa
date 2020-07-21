@@ -10,7 +10,7 @@ export class AuthService {
       authority: Constants.stsAuthority,
       client_id: Constants.clientId,
       redirect_uri: `${Constants.clientRoot}signin-callback.html`,
-      silent_redirect_uri: `${Constants.clientRoot}`,
+      silent_redirect_uri: `${Constants.clientRoot}silent-renew.html`,
       // tslint:disable-next-line:object-literal-sort-keys
       post_logout_redirect_uri: `${Constants.clientRoot}`,
       response_type: 'code',
@@ -31,9 +31,7 @@ export class AuthService {
   }
 
   public renewToken(): Promise<User> {
-    var user = this.userManager.signinSilent();
-    new UserManager({}).signinSilentCallback().catch((err) => console.error(err));
-    return user;
+    return this.userManager.signinSilent();
   }
 
   public logout(): Promise<void> {

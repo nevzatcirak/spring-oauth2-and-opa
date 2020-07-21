@@ -32,9 +32,33 @@ export default class AppContent extends React.Component<any, any> {
 
   public callApi = () => {
     this.apiService
-      .callApi()
+      .callApi('test')
       .then(data => {
-        this.setState({ api: data.data });
+        this.setState({ api: {...this.state.api, callApi: data.data } });
+        toast.success('Api return successfully data, check in section - Api response');
+      })
+      .catch(error => {
+        toast.error(error);
+      });
+  };
+
+  public callApi2 = () => {
+    this.apiService
+      .callApi('rest/test')
+      .then(data => {
+        this.setState({ api: {...this.state.api, callApi2: data.data } });
+        toast.success('Api return successfully data, check in section - Api response');
+      })
+      .catch(error => {
+        toast.error(error);
+      });
+  };
+
+  public callApi3 = () => {
+    this.apiService
+      .callApi('rest/test2')
+      .then(data => {
+        this.setState({ api: {...this.state.api, callApi3: data.data } });
         toast.success('Api return successfully data, check in section - Api response');
       })
       .catch(error => {
@@ -87,6 +111,8 @@ export default class AppContent extends React.Component<any, any> {
           renewToken={this.renewToken}
           getUser={this.getUser}
           callApi={this.callApi}
+          callApi2={this.callApi2}
+          callApi3={this.callApi3}
         />
 
         <AuthContent api={this.state.api} user={this.state.user} />

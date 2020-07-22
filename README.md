@@ -74,8 +74,17 @@ GrantedAuthority is an interface with only one method:
 
     String getAuthority();
 
-
-## Test Auth 2.0 Client
+## Test Auth 2.0 with React Client
+[oidc-client](https://github.com/IdentityModel/oidc-client-js) is used to support OpenID Connect (OIDC) and OAuth2 protocol for client-side. This library supports for user session and access token management.
+### Building the Source
+   Go to react folder and follow these commands.
+   ```bash
+   npm install
+   npm start     
+   ```
+   React frontend will be served at 3000 port.
+   
+## Test Auth 2.0 Postman Client
 [Postman](https://www.postman.com/) with OAuth 2.0 feature might be used to test services. You can find Postman OAuth 2.0 configuration [here](https://learning.postman.com/docs/sending-requests/authorization/).
 
 You must create client in Keycloak for Postman. You may go with Implicit Flow. You must define flow type while creating client in Keycloak.

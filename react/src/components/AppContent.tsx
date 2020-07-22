@@ -38,7 +38,7 @@ export default class AppContent extends React.Component<any, any> {
         toast.success('Api return successfully data, check in section - Api response');
       })
       .catch(error => {
-        toast.error(error);
+        toast.error(error.message);
       });
   };
 
@@ -50,7 +50,7 @@ export default class AppContent extends React.Component<any, any> {
         toast.success('Api return successfully data, check in section - Api response');
       })
       .catch(error => {
-        toast.error(error);
+        toast.error(error.message);
       });
   };
 
@@ -62,7 +62,7 @@ export default class AppContent extends React.Component<any, any> {
         toast.success('Api return successfully data, check in section - Api response');
       })
       .catch(error => {
-        toast.error(error);
+        toast.error(error.message);
       });
   };
 

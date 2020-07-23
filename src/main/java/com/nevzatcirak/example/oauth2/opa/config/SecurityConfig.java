@@ -1,18 +1,22 @@
 package com.nevzatcirak.example.oauth2.opa.config;
 
-import com.nevzatcirak.example.oauth2.opa.security.GrantedAuthoritiesInjector;
+import com.nevzatcirak.example.oauth2.opa.api.TenantService;
+import com.nevzatcirak.example.oauth2.opa.security.TenantJWSKeySelector;
+import com.nevzatcirak.example.oauth2.opa.security.TenantJwtIssuerValidator;
 import com.nevzatcirak.example.oauth2.opa.voter.OPAVoter;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import com.nimbusds.jwt.proc.JWTClaimsSetAwareJWSKeySelector;
+import com.nimbusds.jwt.proc.JWTProcessor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.vote.UnanimousBased;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -21,10 +25,13 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerAuthenticationManagerResolver;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -46,19 +53,15 @@ import java.util.Objects;
 @PropertySource("classpath:application.yml")
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private String opaUrl;
-    private String issuerUri;
-    private String jwkSetUri;
+    private TenantService tenantService;
 
-    public SecurityConfig(@Value("${opa.url}") String opaUrl, @Value("${auth.issuer-uri}") String issuerUri,
-                          @Value("${auth.jwk-set-uri}") String jwkSetUri, @Value("${auth.host}") String hostname) {
+    @Autowired
+    public SecurityConfig(@Value("${opa.url}") String opaUrl, @Value("${auth.host}") String hostname, TenantService tenantService) {
+        this.tenantService = tenantService;
         String authHostname = System.getenv("AUTH_HOSTNAME");
         String opaHostname = System.getenv("OPA_HOSTNAME");
-        if (!Objects.isNull(authHostname)) {
-            this.jwkSetUri = jwkSetUri.replaceAll(hostname, authHostname);
-            this.issuerUri = issuerUri.replaceAll(hostname, authHostname);
-        } else {
-            this.jwkSetUri = jwkSetUri;
-            this.issuerUri = issuerUri;
+        if(!Objects.isNull(authHostname)){
+            this.tenantService.changeDomainName(hostname, authHostname);
         }
         if (!Objects.isNull(opaHostname)) {
             this.opaUrl = opaUrl.replaceAll(hostname, opaHostname);
@@ -87,33 +90,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return rest;
     }
 
-    @Bean(BeanIds.AUTHENTICATION_MANAGER)
-    @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception {
-        return super.authenticationManagerBean();
-    }
-
-    /************************Resource Server Configurations*********************************/
-
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        return JwtDecoders.fromIssuerLocation(issuerUri);
-    }
-
-    @Bean
-    Converter<Jwt, AbstractAuthenticationToken> grantedAuthoritiesInjectorConverter() {
-        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesInjector());
-        return jwtAuthenticationConverter;
-    }
-
-    @Bean
-    GrantedAuthoritiesInjector grantedAuthoritiesInjector() {
-        return new GrantedAuthoritiesInjector();
-    }
-
-    /***************************************************************************************/
-
     /*****************************Open Policy Agent Configuration****************************/
     @Bean
     public AccessDecisionManager accessDecisionManager() {
@@ -123,6 +99,43 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     /***************************************************************************************/
+
+    /*****************************Multi-Tenancy Configuration****************************/
+    @Bean
+    public JWTClaimsSetAwareJWSKeySelector jwtClaimsSetAwareJWSKeySelector() {
+        return new TenantJWSKeySelector(tenantService);
+    }
+
+    @Bean
+    public OAuth2TokenValidator oAuth2TokenValidator() {
+        return new TenantJwtIssuerValidator(tenantService);
+    }
+
+    @Bean
+    public JwtIssuerAuthenticationManagerResolver jwtIssuerAuthenticationManagerResolver() {
+        return new JwtIssuerAuthenticationManagerResolver(tenantService.getIssuerUris());
+    }
+
+    @Bean
+    JWTProcessor jwtProcessor(JWTClaimsSetAwareJWSKeySelector keySelector) {
+        ConfigurableJWTProcessor<SecurityContext> jwtProcessor =
+                new DefaultJWTProcessor();
+        jwtProcessor.setJWTClaimsSetAwareJWSKeySelector(keySelector);
+        return jwtProcessor;
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder(JWTProcessor jwtProcessor, OAuth2TokenValidator<Jwt> jwtValidator) {
+        NimbusJwtDecoder decoder = new NimbusJwtDecoder(jwtProcessor);
+        OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>
+                (JwtValidators.createDefault(), jwtValidator);
+        decoder.setJwtValidator(validator);
+        return decoder;
+    }
+
+    /***************************************************************************************/
+
+
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -149,11 +162,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .oauth2ResourceServer(oauth2ResourceServer ->
                         oauth2ResourceServer
-                                .jwt(jwt -> jwt
-                                        .decoder(jwtDecoder())
-                                        .jwkSetUri(jwkSetUri)
-                                        .jwtAuthenticationConverter(grantedAuthoritiesInjectorConverter())
-                                )
+                                .authenticationManagerResolver(jwtIssuerAuthenticationManagerResolver())
 
                 );
     }

@@ -91,4 +91,4 @@ You must create client in Keycloak for Postman. You may go with Implicit Flow. Y
 
 The example below is a implicit flow;
 
-![alt text](https://github.com/nevzatcirak/spring-oauth2-and-opa/blob/master/example/images/postman.png?raw=true)
+![alt text](https://github.com/nevzatcirak/spring-oauth2-and-opa/blob/master/postman.png?raw=true)

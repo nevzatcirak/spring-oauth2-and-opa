@@ -1,6 +1,7 @@
 package com.nevzatcirak.example.oauth2.opa.config;
 
 import com.nevzatcirak.example.oauth2.opa.api.TenantService;
+import com.nevzatcirak.example.oauth2.opa.security.GrantedAuthoritiesInjector;
 import com.nevzatcirak.example.oauth2.opa.security.TenantJWSKeySelector;
 import com.nevzatcirak.example.oauth2.opa.security.TenantJwtIssuerValidator;
 import com.nevzatcirak.example.oauth2.opa.voter.OPAVoter;
@@ -14,9 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.vote.UnanimousBased;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -31,6 +34,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerAuthenticationManagerResolver;
 import org.springframework.web.client.RestTemplate;
 
@@ -90,6 +94,22 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return rest;
     }
 
+    /************************Resource Server Configurations*********************************/
+
+    @Bean
+    Converter<Jwt, AbstractAuthenticationToken> grantedAuthoritiesInjectorConverter() {
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesInjector());
+        return jwtAuthenticationConverter;
+    }
+
+    @Bean
+    GrantedAuthoritiesInjector grantedAuthoritiesInjector() {
+        return new GrantedAuthoritiesInjector();
+    }
+
+    /***************************************************************************************/
+
     /*****************************Open Policy Agent Configuration****************************/
     @Bean
     public AccessDecisionManager accessDecisionManager() {
@@ -109,11 +129,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public OAuth2TokenValidator oAuth2TokenValidator() {
         return new TenantJwtIssuerValidator(tenantService);
-    }
-
-    @Bean
-    public JwtIssuerAuthenticationManagerResolver jwtIssuerAuthenticationManagerResolver() {
-        return new JwtIssuerAuthenticationManagerResolver(tenantService.getIssuerUris());
     }
 
     @Bean
@@ -162,7 +177,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .oauth2ResourceServer(oauth2ResourceServer ->
                         oauth2ResourceServer
-                                .authenticationManagerResolver(jwtIssuerAuthenticationManagerResolver())
+                                .jwt(jwt ->
+                                        jwt
+                                                .jwtAuthenticationConverter(grantedAuthoritiesInjectorConverter())
+                                                .decoder(jwtDecoder(jwtProcessor(jwtClaimsSetAwareJWSKeySelector()),oAuth2TokenValidator())))
 
                 );
     }

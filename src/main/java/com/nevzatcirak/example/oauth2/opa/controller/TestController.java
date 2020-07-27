@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
@@ -23,6 +25,9 @@ public class TestController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private WebClient webClient;
 
     private String apiUrl;
 
@@ -45,8 +50,16 @@ public class TestController {
     }
 
     @GetMapping("/rest/test2")
-    public String getRestTest2() {
-        return restTemplate.getForObject(apiUrl, String.class);
+    public Mono<String> getRestTest2() {
+        return webClient.get()
+                .uri(apiUrl)
+                .retrieve()
+                .bodyToMono(String.class);
+    }
+
+    @GetMapping("/rest/test3")
+    public Mono<String> getRestTest3() {
+        return Mono.just("Rest Test 3 is OK");
     }
 
 }

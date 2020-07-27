@@ -36,7 +36,9 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtIssuerAuthenticationManagerResolver;
+import org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServletBearerExchangeFilterFunction;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Arrays;
 import java.util.List;
@@ -92,6 +94,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             return execution.execute(request, body);
         });
         return rest;
+    }
+
+    @Bean
+    public WebClient webClient() {
+        return WebClient.builder()
+                .filter(new ServletBearerExchangeFilterFunction())
+                .build();
     }
 
     /************************Resource Server Configurations*********************************/

@@ -10,10 +10,10 @@ auth:
 
 multi-tenant:
   tenants:
-    - issuerUri: "http://localhost:8080/auth/realms/master"
-      jwkSetUri: "http://localhost:8080/auth/realms/master/protocol/openid-connect/certs"
-    - issuerUri: "http://localhost:8080/auth/realms/x-realm"
-      jwkSetUri: "http://localhost:8080/auth/realms/x-realm/protocol/openid-connect/certs"
+    - issuerUri: "http://${auth.host}:8080/auth/realms/master"
+      jwkSetUri: "http://${auth.host}:8080/auth/realms/master/protocol/openid-connect/certs"
+    - issuerUri: "http://${auth.host}:8080/auth/realms/x-realm"
+      jwkSetUri: "http://${auth.host}:8080/auth/realms/x-realm/protocol/openid-connect/certs"
 
 
 api:
@@ -23,8 +23,8 @@ opa:
   url: "http://${auth.host}:8181/v1/data/http/authz/allow"
 
 
-#logging:
-#  level:
-#    org:
-#      springframework:
-#        security: DEBUG
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG

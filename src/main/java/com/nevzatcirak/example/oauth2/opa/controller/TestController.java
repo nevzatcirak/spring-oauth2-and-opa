@@ -1,5 +1,6 @@
 package com.nevzatcirak.example.oauth2.opa.controller;
 
+import com.nevzatcirak.example.oauth2.opa.api.AuthFacade;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +30,14 @@ public class TestController {
     @Autowired
     private WebClient webClient;
 
+    @Autowired
+    private AuthFacade authFacade;
+
     private String apiUrl;
 
-    public TestController(@Value("${api.url}")String apiUrl, @Value("${auth.host}") String hostname){
+    public TestController(@Value("${api.url}") String apiUrl, @Value("${auth.host}") String hostname) {
         String apiHost = System.getenv("API_HOSTNAME");
-        if(!Objects.isNull(apiHost))
+        if (!Objects.isNull(apiHost))
             this.apiUrl = apiUrl.replaceAll(hostname, apiHost);
         else
             this.apiUrl = apiUrl;
@@ -41,7 +45,7 @@ public class TestController {
 
     @GetMapping("/test")
     public String getTestInfo() {
-        return "OK. You have authenticated! :)";
+        return "OK. You have authenticated as " + authFacade.getUsername() + "! :)";
     }
 
     @GetMapping("/rest/test")

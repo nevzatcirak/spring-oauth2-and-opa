@@ -3,9 +3,6 @@ server:
 
 auth:
   host: localhost
-  realm: master
-  issuer-uri: "http://${auth.host}:8080/auth/realms/${auth.realm}"
-  jwk-set-uri: "${auth.issuer-uri}/protocol/openid-connect/certs"
   user-name-attribute: preferred_username
 
 multi-tenant:
@@ -23,8 +20,8 @@ opa:
   url: "http://${auth.host}:8181/v1/data/http/authz/allow"
 
 
-logging:
-  level:
-    org:
-      springframework:
-        security: DEBUG
+#logging:
+#  level:
+#    org:
+#      springframework:
+#        security: DEBUG

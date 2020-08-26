@@ -22,18 +22,33 @@ export class AuthService {
     Log.level = Log.INFO;
   }
 
+  /**
+   * Gets User claims which are contains access_token, refresh_token, token_type
+   * scope, profile etc..
+   * Details are in the User Object
+   */
   public getUser(): Promise<User | null> {
     return this.userManager.getUser();
   }
 
+  /**
+   * If you are not logged in, you will redirect to provider login uri
+   */
   public async login(): Promise<void> {
     return await this.userManager.signinRedirect();
   }
 
+  /**
+   * Sends renew token request silently, after this request access will be
+   * renewed.
+   */
   public renewToken(): Promise<User> {
     return this.userManager.signinSilent();
   }
 
+  /**
+   * Sends logout request to the authentication provider.
+   */
   public logout(): Promise<void> {
     return this.userManager.signoutRedirect();
   }
